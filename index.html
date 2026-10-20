@@ -11,6 +11,7 @@
     <header class="app-header">
       <h1>Habit Tracker</h1>
       <p class="subtitle">Build habits one day at a time.</p>
+      <p id="week-range" class="week-range"></p>
     </header>
 
     <form id="add-form" class="add-form" autocomplete="off">
@@ -21,11 +22,13 @@
 
     <p id="message" class="message" role="status" aria-live="polite"></p>
 
+    <div id="week-header" class="grid-row week-header" aria-hidden="true"></div>
     <ul id="habit-list" class="habit-list"></ul>
     <p id="empty-state" class="empty-state" hidden>No habits yet. Add your first one above.</p>
   </main>
 
   <script src="storage.js"></script>
+  <script src="dates.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

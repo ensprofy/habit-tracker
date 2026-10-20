@@ -5,8 +5,10 @@
   --muted: #667085;
   --border: #dfe3ea;
   --accent: #3b6ef5;
+  --accent-soft: #e8eefe;
   --accent-text: #ffffff;
   --danger: #c93a3a;
+  --streak: #d9730d;
   --radius: 10px;
 }
 
@@ -21,13 +23,14 @@ body {
 }
 
 .app {
-  max-width: 640px;
+  max-width: 760px;
   margin: 0 auto;
   padding: 32px 16px 64px;
 }
 
 .app-header h1 { margin: 0; font-size: 1.75rem; }
-.subtitle { margin: 4px 0 24px; color: var(--muted); }
+.subtitle { margin: 4px 0 4px; color: var(--muted); }
+.week-range { margin: 0 0 24px; font-weight: 600; }
 
 .add-form { display: flex; gap: 8px; }
 
@@ -63,23 +66,74 @@ button {
 
 .message { min-height: 1.5em; margin: 8px 0 0; color: var(--danger); font-size: 0.9rem; }
 
-.habit-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+/* Weekly grid: habit name | 7 days | streak | delete */
+.grid-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) repeat(7, 44px) 64px 76px;
+  align-items: center;
+  column-gap: 4px;
+}
+
+.week-header {
+  margin-top: 8px;
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.week-header[hidden] { display: none; }
+.week-header .habit-col { text-align: left; }
+
+.day-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 4px 0;
+}
+
+.day-col.is-today { background: var(--accent-soft); }
+.week-header .is-today { color: var(--accent); font-weight: 700; }
+.day-name { font-weight: 600; }
+
+.habit-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
 
 .habit-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  padding: 8px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
-.habit-name { overflow-wrap: anywhere; }
+.habit-name { overflow-wrap: anywhere; padding-right: 8px; }
+
+.day-col input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.day-col input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.35; }
+
+.streak-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-col.is-active { color: var(--streak); font-weight: 700; }
+.week-header .streak-col { font-weight: 400; }
+
+.action-col { display: flex; justify-content: flex-end; }
 
 .delete-btn {
-  flex: none;
   padding: 4px 10px;
   color: var(--danger);
   background: transparent;
@@ -97,4 +151,14 @@ button {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Narrow screens: habit name gets its own line above the checkboxes */
+@media (max-width: 640px) {
+  .grid-row {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 52px 68px;
+  }
+  .habit-item .habit-col { grid-column: 1 / -1; padding-bottom: 6px; font-weight: 600; }
+  .week-header .habit-col { display: none; }
+  .week-header { padding: 0 14px; }
 }

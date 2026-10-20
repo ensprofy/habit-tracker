@@ -25,11 +25,14 @@ habit-tracker/
 ├── style.css       # layout, theme variables
 ├── app.js          # state, rendering, events
 ├── storage.js      # localStorage load/save, schema versioning
+├── dates.js        # local-date helpers, week days, streak logic (pure functions)
+├── tests.js        # logic checks for dates.js
+├── tests.html      # open in a browser to run the checks
 ├── PLAN.md         # this file
 └── README.md       # usage and screenshots
 ```
 
-Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, then `app.js`.
+Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, `dates.js`, then `app.js`.
 
 ## 3. Data model
 
@@ -84,10 +87,10 @@ Design decisions:
 - **Done when:** habits survive a page reload.
 
 ### M2: Weekly checkboxes and streaks
-- [ ] Render the 7-day grid for the current week.
-- [ ] Toggle completions; persist on every change.
-- [ ] Implement and unit-check `computeStreak` (see testing).
-- [ ] Highlight today's column; disable or dim future days (decision: allow checking only today and the past).
+- [x] Render the 7-day grid for the current week.
+- [x] Toggle completions; persist on every change.
+- [x] Implement and unit-check `computeStreak` (see testing).
+- [x] Highlight today's column; disable or dim future days (decision: allow checking only today and the past).
 - **Done when:** checking boxes updates the streak instantly and correctly after reload.
 
 ### M3: Polish and usability
