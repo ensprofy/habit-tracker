@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Habit Tracker checks</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 1.4rem; }
+    #summary { font-weight: 700; }
+    #summary.pass { color: #1a7f37; }
+    #summary.fail { color: #c93a3a; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 2px 0; }
+    li.pass::before { content: "\2713  "; color: #1a7f37; }
+    li.fail::before { content: "\2717  "; color: #c93a3a; }
+    li.fail { color: #c93a3a; }
+  </style>
+</head>
+<body>
+  <h1>Habit Tracker logic checks</h1>
+  <p id="summary"></p>
+  <ul id="results"></ul>
+
+  <script src="dates.js"></script>
+  <script src="tests.js"></script>
+  <script>
+    (function () {
+      var results = window.HabitTestResults;
+      var list = document.getElementById("results");
+      var failed = 0;
+      results.forEach(function (r) {
+        var li = document.createElement("li");
+        li.className = r.ok ? "pass" : "fail";
+        li.textContent = r.name + (r.ok ? "" : " (" + r.detail + ")");
+        if (!r.ok) failed++;
+        list.appendChild(li);
+      });
+      var summary = document.getElementById("summary");
+      summary.className = failed ? "fail" : "pass";
+      summary.textContent = failed
+        ? failed + " of " + results.length + " checks failed"
+        : "All " + results.length + " checks passed";
+    })();
+  </script>
+</body>
+</html>
