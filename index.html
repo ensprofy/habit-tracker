@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Habit Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <h1>Habit Tracker</h1>
+      <p class="subtitle">Build habits one day at a time.</p>
+    </header>
+
+    <form id="add-form" class="add-form" autocomplete="off">
+      <label for="habit-name" class="visually-hidden">New habit name</label>
+      <input id="habit-name" type="text" placeholder="Add a habit, e.g. Drink water" maxlength="60" required>
+      <button type="submit">Add</button>
+    </form>
+
+    <p id="message" class="message" role="status" aria-live="polite"></p>
+
+    <ul id="habit-list" class="habit-list"></ul>
+    <p id="empty-state" class="empty-state" hidden>No habits yet. Add your first one above.</p>
+  </main>
+
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

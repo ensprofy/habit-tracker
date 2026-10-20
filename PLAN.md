@@ -78,9 +78,9 @@ Design decisions:
 ## 6. Milestones
 
 ### M1: Skeleton and persistence (≈ 1 session)
-- [ ] Create `index.html`, `style.css`, `app.js`, `storage.js`.
-- [ ] Implement state load/save with `localStorage` and error handling.
-- [ ] Render habit list from state; add and delete habits.
+- [x] Create `index.html`, `style.css`, `app.js`, `storage.js`.
+- [x] Implement state load/save with `localStorage` and error handling.
+- [x] Render habit list from state; add and delete habits.
 - **Done when:** habits survive a page reload.
 
 ### M2: Weekly checkboxes and streaks
