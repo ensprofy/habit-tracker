@@ -30,7 +30,28 @@ body {
 
 .app-header h1 { margin: 0; font-size: 1.75rem; }
 .subtitle { margin: 4px 0 4px; color: var(--muted); }
-.week-range { margin: 0 0 24px; font-weight: 600; }
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+
+.week-range { margin: 0; font-weight: 600; min-width: 0; }
+
+.nav-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 4px 12px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.nav-btn:hover:not(:disabled) { background: var(--accent-soft); }
+.nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.today-btn { margin-left: auto; font-size: 0.9rem; }
+.today-btn[hidden] { display: none; }
 
 .add-form { display: flex; gap: 8px; }
 
@@ -107,7 +128,32 @@ button {
   border-radius: var(--radius);
 }
 
-.habit-name { overflow-wrap: anywhere; padding-right: 8px; }
+.habit-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.habit-name { overflow-wrap: anywhere; }
+
+.rename-btn {
+  flex: none;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.habit-item:hover .rename-btn,
+.rename-btn:focus-visible { border-color: var(--border); }
+.rename-btn:hover { color: var(--text); }
+
+.rename-input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
 
 .day-col input[type="checkbox"] {
   width: 22px;
@@ -153,12 +199,34 @@ button {
   white-space: nowrap;
 }
 
-/* Narrow screens: habit name gets its own line above the checkboxes */
+/* Narrow screens: name on its own line, then 7 wide day columns, then streak + delete */
 @media (max-width: 640px) {
+  .week-nav { flex-wrap: wrap; }
+  .week-range { flex: 1; }
+  .today-btn { margin-left: 0; }
+
   .grid-row {
-    grid-template-columns: repeat(7, minmax(0, 1fr)) 52px 68px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
   .habit-item .habit-col { grid-column: 1 / -1; padding-bottom: 6px; font-weight: 600; }
-  .week-header .habit-col { display: none; }
-  .week-header { padding: 0 14px; }
+  .week-header .habit-col,
+  .week-header .streak-col,
+  .week-header .action-col { display: none; }
+  .week-header { padding: 0 15px; }
+
+  .day-col input[type="checkbox"] { width: 26px; height: 26px; }
+  .habit-item .day-col { padding: 6px 0; }
+
+  .habit-item .streak-col {
+    grid-column: 1 / 5;
+    justify-content: flex-start;
+    padding-top: 6px;
+  }
+  .habit-item .streak-col::before { content: "Streak:"; font-weight: 400; color: var(--muted); }
+  .habit-item .action-col { grid-column: 5 / -1; padding-top: 6px; }
+  .rename-btn { border-color: var(--border); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
 }

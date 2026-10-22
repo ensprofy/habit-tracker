@@ -11,8 +11,14 @@
     <header class="app-header">
       <h1>Habit Tracker</h1>
       <p class="subtitle">Build habits one day at a time.</p>
-      <p id="week-range" class="week-range"></p>
     </header>
+
+    <nav class="week-nav" aria-label="Week navigation">
+      <button id="week-prev" type="button" class="nav-btn" aria-label="Previous week">&lsaquo;</button>
+      <p id="week-range" class="week-range" aria-live="polite"></p>
+      <button id="week-next" type="button" class="nav-btn" aria-label="Next week">&rsaquo;</button>
+      <button id="week-today" type="button" class="nav-btn today-btn">This week</button>
+    </nav>
 
     <form id="add-form" class="add-form" autocomplete="off">
       <label for="habit-name" class="visually-hidden">New habit name</label>
