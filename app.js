@@ -8,6 +8,8 @@
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   var state = HabitStorage.load();
+  var weekOffset = 0;   // 0 = this week, -1 = last week, ... (never positive)
+  var editingId = null; // id of the habit currently being renamed
 
   var form = document.getElementById("add-form");
   var input = document.getElementById("habit-name");
@@ -16,6 +18,9 @@
   var message = document.getElementById("message");
   var weekRange = document.getElementById("week-range");
   var weekHeader = document.getElementById("week-header");
+  var weekPrev = document.getElementById("week-prev");
+  var weekNext = document.getElementById("week-next");
+  var weekToday = document.getElementById("week-today");
 
   function newId() {
     return "h_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -43,26 +48,29 @@
     return MONTHS[d.getMonth()] + " " + d.getDate();
   }
 
-  function addHabit(rawName) {
+  // Shared by "add" and "rename". Returns { name } or { error }.
+  function validateName(rawName, ignoreId) {
     var name = rawName.trim().replace(/\s+/g, " ");
-    if (!name) {
-      showMessage("Please enter a habit name.");
-      return false;
-    }
+    if (!name) return { error: "Please enter a habit name." };
     if (name.length > MAX_NAME_LENGTH) {
-      showMessage("Habit name is too long (max " + MAX_NAME_LENGTH + " characters).");
-      return false;
+      return { error: "Habit name is too long (max " + MAX_NAME_LENGTH + " characters)." };
     }
     var duplicate = state.habits.some(function (h) {
-      return h.name.toLowerCase() === name.toLowerCase();
+      return h.id !== ignoreId && h.name.toLowerCase() === name.toLowerCase();
     });
-    if (duplicate) {
-      showMessage("You already have a habit with that name.");
+    if (duplicate) return { error: "You already have a habit with that name." };
+    return { name: name };
+  }
+
+  function addHabit(rawName) {
+    var result = validateName(rawName);
+    if (result.error) {
+      showMessage(result.error);
       return false;
     }
     state.habits.push({
       id: newId(),
-      name: name,
+      name: result.name,
       createdAt: HabitDates.todayISO(),
       completions: []
     });
@@ -88,6 +96,38 @@
     render({ habitId: id, iso: iso }); // keep keyboard focus on the box just toggled
   }
 
+  function startRename(id) {
+    editingId = id;
+    showMessage("");
+    render({ habitId: id, edit: true });
+  }
+
+  function finishRename(id, rawName, save) {
+    var habit = state.habits.filter(function (h) { return h.id === id; })[0];
+    if (!habit) {
+      editingId = null;
+      render();
+      return;
+    }
+    if (save) {
+      var result = validateName(rawName, id);
+      if (result.error) {
+        showMessage(result.error);
+        return; // stay in edit mode so the user can fix it
+      }
+      habit.name = result.name;
+      persist();
+    }
+    editingId = null;
+    showMessage("");
+    render({ habitId: id, rename: true });
+  }
+
+  function setWeekOffset(n) {
+    weekOffset = Math.min(0, n);
+    render();
+  }
+
   function renderWeekHeader(days, today) {
     weekHeader.textContent = "";
     weekHeader.appendChild(el("span", "habit-col", "Habit"));
@@ -101,11 +141,55 @@
     weekHeader.appendChild(el("span", "action-col"));
   }
 
-  var focusTarget = null; // checkbox to re-focus after a render
+  var focusTarget = null; // element to re-focus after a render
+
+  function renderNameCell(habit, refocus) {
+    var cell = el("span", "habit-col habit-cell");
+
+    if (editingId === habit.id) {
+      var edit = document.createElement("input");
+      edit.type = "text";
+      edit.className = "rename-input";
+      edit.value = habit.name;
+      edit.maxLength = MAX_NAME_LENGTH;
+      edit.setAttribute("aria-label", "New name for " + habit.name);
+      var done = false; // Enter/Escape re-render removes the field; ignore the blur that follows
+      edit.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          done = true;
+          finishRename(habit.id, edit.value, true);
+          if (editingId === habit.id) done = false; // validation failed, still editing
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          done = true;
+          finishRename(habit.id, edit.value, false);
+        }
+      });
+      edit.addEventListener("blur", function () {
+        if (done) return;
+        done = true;
+        finishRename(habit.id, edit.value, true);
+        if (editingId === habit.id) done = false;
+      });
+      cell.appendChild(edit);
+      if (refocus && refocus.habitId === habit.id && refocus.edit) focusTarget = edit;
+      return cell;
+    }
+
+    cell.appendChild(el("span", "habit-name", habit.name));
+    var rename = el("button", "rename-btn", "Rename");
+    rename.type = "button";
+    rename.setAttribute("aria-label", "Rename habit: " + habit.name);
+    rename.addEventListener("click", function () { startRename(habit.id); });
+    cell.appendChild(rename);
+    if (refocus && refocus.habitId === habit.id && refocus.rename) focusTarget = rename;
+    return cell;
+  }
 
   function renderHabit(habit, days, today, refocus) {
     var li = el("li", "habit-item grid-row");
-    li.appendChild(el("span", "habit-col habit-name", habit.name));
+    li.appendChild(renderNameCell(habit, refocus));
 
     days.forEach(function (iso, i) {
       var cell = el("span", "day-col" + (iso === today ? " is-today" : ""));
@@ -124,6 +208,7 @@
       li.appendChild(cell);
     });
 
+    // Streak always counts back from the real today, whichever week is shown.
     var streak = HabitDates.computeStreak(habit.completions, today);
     var streakCell = el("span", "streak-col" + (streak > 0 ? " is-active" : ""));
     streakCell.appendChild(el("span", "streak-icon", streak > 0 ? "🔥" : ""));
@@ -148,9 +233,12 @@
   function render(refocus) {
     focusTarget = null;
     var today = HabitDates.todayISO();
-    var days = HabitDates.getWeekDays(today);
+    var days = HabitDates.getWeekDays(HabitDates.addDays(today, weekOffset * 7));
 
-    weekRange.textContent = "Week of " + formatShort(days[0]) + " – " + formatShort(days[6]);
+    weekRange.textContent = "Week of " + formatShort(days[0]) + " – " + formatShort(days[6]) +
+      (weekOffset === 0 ? " (this week)" : "");
+    weekNext.disabled = weekOffset >= 0;
+    weekToday.hidden = weekOffset === 0;
     renderWeekHeader(days, today);
 
     list.textContent = "";
@@ -173,9 +261,13 @@
     input.focus();
   });
 
+  weekPrev.addEventListener("click", function () { setWeekOffset(weekOffset - 1); });
+  weekNext.addEventListener("click", function () { setWeekOffset(weekOffset + 1); });
+  weekToday.addEventListener("click", function () { setWeekOffset(0); });
+
   // Refresh when returning to the tab so a new day (or week) is picked up.
   document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) render();
+    if (!document.hidden && editingId === null) render();
   });
 
   render();

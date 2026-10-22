@@ -2,19 +2,24 @@
 
 A single-page habit tracker in plain HTML, CSS and JavaScript. No build step, no dependencies.
 
+![Desktop view](docs/screenshot-desktop.png)
+
+<img src="docs/screenshot-mobile.png" alt="Phone-width view" width="240">
+
 ## Run it
 
 Open `index.html` in any modern browser (double-click it). Your habits and check-ins are saved in the browser's `localStorage`, so they stay after you reload or close the tab.
 
 ## How it works
 
-- Add habits with the input at the top; delete them with the Delete button.
+- Add habits with the input at the top. Rename one with the Rename button (Enter or clicking away saves, Escape cancels) and remove it with Delete. Names are trimmed and must be unique.
+- Use the arrows above the grid to look at earlier weeks and fix a missed check-in; "This week" jumps back. You can't go past the current week.
 - Each habit has a checkbox for every day of the current week (Monday to Sunday). Today's column is highlighted. Future days are locked.
 - The streak counter shows how many days in a row you have completed the habit. If you haven't checked today yet, the streak still counts up to yesterday, so it isn't shown as broken during the day.
 
 ## Status
 
-Milestones 1 and 2 are done (persistence, add/delete, weekly checkboxes, streaks). Next up: week navigation, rename, accessibility and responsive polish. See [PLAN.md](PLAN.md) for the roadmap.
+Milestones 1 to 3 are done (persistence, add/delete/rename, weekly checkboxes, streaks, week navigation, accessibility and responsive polish). Next up: optional extras such as dark mode and a weekly chart. See [PLAN.md](PLAN.md) for the roadmap.
 
 ## Files
 

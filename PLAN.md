@@ -94,11 +94,11 @@ Design decisions:
 - **Done when:** checking boxes updates the streak instantly and correctly after reload.
 
 ### M3: Polish and usability
-- [ ] Previous/next week navigation.
-- [ ] Inline rename of habits.
-- [ ] Empty state, input validation (trim, no duplicates, max length).
-- [ ] Accessibility pass and responsive layout.
-- [ ] README with usage and a screenshot.
+- [x] Previous/next week navigation.
+- [x] Inline rename of habits.
+- [x] Empty state, input validation (trim, no duplicates, max length).
+- [x] Accessibility pass and responsive layout.
+- [x] README with usage and a screenshot.
 - **Done when:** usable comfortably on desktop and phone-width screens.
 
 ### M4: First iteration features (pick as desired)
