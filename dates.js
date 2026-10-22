@@ -53,6 +53,43 @@
     return streak;
   }
 
+  // Whole calendar days from a to b (negative if b is earlier). DST-safe: uses UTC parts.
+  function diffDays(a, b) {
+    var x = parseISO(a), y = parseISO(b);
+    return Math.round((Date.UTC(y.getFullYear(), y.getMonth(), y.getDate()) -
+      Date.UTC(x.getFullYear(), x.getMonth(), x.getDate())) / 86400000);
+  }
+
+  // Longest run of consecutive completed days anywhere in the history.
+  function computeLongestStreak(completions) {
+    var days = Object.keys(completions.reduce(function (set, d) { set[d] = true; return set; }, {})).sort();
+    var best = 0, run = 0;
+    for (var i = 0; i < days.length; i++) {
+      run = (i > 0 && days[i] === addDays(days[i - 1], 1)) ? run + 1 : 1;
+      if (run > best) best = run;
+    }
+    return best;
+  }
+
+  // Completion rate over the last `windowDays` days ending today. Counting starts at
+  // the habit's first day (createdAt or its earliest check-in, whichever is earlier),
+  // so a brand-new habit isn't penalised for days before it existed.
+  // Returns { done, total, rate } (rate 0..1) or null if the habit has no start day yet.
+  function computeCompletionRate(habit, today, windowDays) {
+    var starts = habit.completions.filter(function (d) { return d <= today; });
+    if (habit.createdAt && habit.createdAt <= today) starts.push(habit.createdAt);
+    if (!starts.length) return null;
+    var first = starts.reduce(function (a, b) { return a < b ? a : b; });
+    var windowStart = addDays(today, -(windowDays - 1));
+    var from = first > windowStart ? first : windowStart;
+    var total = diffDays(from, today) + 1;
+    var done = 0, seen = {};
+    habit.completions.forEach(function (d) {
+      if (d >= from && d <= today && !seen[d]) { seen[d] = true; done++; }
+    });
+    return { done: done, total: total, rate: done / total };
+  }
+
   // Adds the date if missing, removes it if present. Returns a new sorted array.
   function toggleDate(completions, iso) {
     if (completions.indexOf(iso) !== -1) {
@@ -67,7 +104,10 @@
     parseISO: parseISO,
     addDays: addDays,
     getWeekDays: getWeekDays,
+    diffDays: diffDays,
     computeStreak: computeStreak,
+    computeLongestStreak: computeLongestStreak,
+    computeCompletionRate: computeCompletionRate,
     toggleDate: toggleDate
   };
 })(typeof window !== "undefined" ? window : globalThis);

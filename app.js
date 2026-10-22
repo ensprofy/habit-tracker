@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var MAX_NAME_LENGTH = 60;
+  var MAX_NAME_LENGTH = HabitStorage.MAX_NAME_LENGTH;
   var DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   var DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -21,13 +21,24 @@
   var weekPrev = document.getElementById("week-prev");
   var weekNext = document.getElementById("week-next");
   var weekToday = document.getElementById("week-today");
+  var themeToggle = document.getElementById("theme-toggle");
+  var insights = document.getElementById("insights");
+  var chartTitle = document.getElementById("chart-title");
+  var chartBox = document.getElementById("chart");
+  var statsBox = document.getElementById("stats");
+  var exportBtn = document.getElementById("export-btn");
+  var importBtn = document.getElementById("import-btn");
+  var importFile = document.getElementById("import-file");
+  var MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
   function newId() {
     return "h_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  function showMessage(text) {
+  // Errors are shown in red; pass isInfo for neutral confirmations.
+  function showMessage(text, isInfo) {
     message.textContent = text || "";
+    message.className = "message" + (isInfo ? " is-info" : "");
   }
 
   function persist() {
@@ -121,6 +132,74 @@
     editingId = null;
     showMessage("");
     render({ habitId: id, rename: true });
+  }
+
+  // ---- Theme -----------------------------------------------------------
+  var darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function effectiveTheme() {
+    if (state.settings.theme) return state.settings.theme;
+    return darkQuery && darkQuery.matches ? "dark" : "light";
+  }
+
+  function applyTheme() {
+    var root = document.documentElement;
+    if (state.settings.theme) root.setAttribute("data-theme", state.settings.theme);
+    else root.removeAttribute("data-theme");
+    var dark = effectiveTheme() === "dark";
+    // The button shows (and announces) what a click will switch to.
+    themeToggle.textContent = dark ? "\u2600 Light" : "\u263E Dark";
+    themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+  }
+
+  function toggleTheme() {
+    state.settings.theme = effectiveTheme() === "dark" ? "light" : "dark";
+    persist();
+    applyTheme();
+  }
+
+  // ---- Backup: export / import -----------------------------------------
+  function exportData() {
+    var blob = new Blob([HabitStorage.serialize(state)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = "habit-tracker-" + HabitDates.todayISO() + ".json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showMessage("Backup downloaded (" + state.habits.length + " habit" + (state.habits.length === 1 ? "" : "s") + ").", true);
+  }
+
+  function importData(file) {
+    if (file.size > MAX_IMPORT_BYTES) {
+      showMessage("That file is too large to be a Habit Tracker backup.");
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      var imported = HabitStorage.parse(String(reader.result));
+      if (!imported) {
+        showMessage("That file isn't a valid Habit Tracker backup.");
+        return;
+      }
+      var question = "Replace your current " + state.habits.length + " habit(s) with the " +
+        imported.habits.length + " habit(s) in this file? This cannot be undone.";
+      if (!window.confirm(question)) {
+        showMessage("Import cancelled.", true);
+        return;
+      }
+      if (!imported.settings.theme) imported.settings = state.settings; // keep current theme
+      state = imported;
+      editingId = null;
+      persist();
+      applyTheme();
+      render();
+      showMessage("Imported " + state.habits.length + " habit" + (state.habits.length === 1 ? "" : "s") + ".", true);
+    };
+    reader.onerror = function () { showMessage("Could not read that file."); };
+    reader.readAsText(file);
   }
 
   function setWeekOffset(n) {
@@ -250,6 +329,13 @@
     emptyState.hidden = !empty;
     weekHeader.hidden = empty;
 
+    insights.hidden = empty;
+    if (!empty) {
+      chartTitle.textContent = weekOffset === 0 ? "Progress this week" : "Progress for week of " + formatShort(days[0]);
+      HabitCharts.renderChart(chartBox, state.habits, days, today);
+      HabitCharts.renderStats(statsBox, state.habits, today);
+    }
+
     if (focusTarget) focusTarget.focus();
   }
 
@@ -261,6 +347,15 @@
     input.focus();
   });
 
+  themeToggle.addEventListener("click", toggleTheme);
+  if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener("change", applyTheme);
+  exportBtn.addEventListener("click", exportData);
+  importBtn.addEventListener("click", function () { importFile.click(); });
+  importFile.addEventListener("change", function () {
+    if (importFile.files && importFile.files[0]) importData(importFile.files[0]);
+    importFile.value = ""; // allow re-selecting the same file
+  });
+
   weekPrev.addEventListener("click", function () { setWeekOffset(weekOffset - 1); });
   weekNext.addEventListener("click", function () { setWeekOffset(weekOffset + 1); });
   weekToday.addEventListener("click", function () { setWeekOffset(0); });
@@ -270,5 +365,6 @@
     if (!document.hidden && editingId === null) render();
   });
 
+  applyTheme();
   render();
 })();

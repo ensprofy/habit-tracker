@@ -102,11 +102,11 @@ Design decisions:
 - **Done when:** usable comfortably on desktop and phone-width screens.
 
 ### M4: First iteration features (pick as desired)
-- [ ] Dark mode (CSS variables, `prefers-color-scheme`, manual toggle saved in storage).
-- [ ] Weekly progress chart (plain SVG or `<canvas>`, no library).
-- [ ] Longest streak and completion rate per habit.
-- [ ] Export/import data as JSON for backup.
-- [ ] Reorder habits (drag and drop).
+- [x] Dark mode (CSS variables, `prefers-color-scheme`, manual toggle saved in storage).
+- [x] Weekly progress chart (plain SVG or `<canvas>`, no library).
+- [x] Longest streak and completion rate per habit.
+- [x] Export/import data as JSON for backup.
+- [ ] Reorder habits (drag and drop). Not built yet; a simpler alternative is up/down buttons, which also work on touch screens and with a keyboard.
 
 ### M5: Release
 - [ ] Enable GitHub Pages so the app is available by URL (optional; the file still works locally).
@@ -125,7 +125,7 @@ No test framework is required. Keep verification lightweight:
 |---|---|
 | UTC vs local date bugs shifting completions by a day | Build ISO dates from local `getFullYear/getMonth/getDate`; cover in tests. |
 | Corrupted or outdated stored data | Wrap parsing in try/catch, validate shape, keep a `version` for migrations. |
-| Data loss when the browser clears site data | JSON export/import (M4); mention in README. |
+| Data loss when the browser clears site data | JSON export/import (built in M4); mentioned in README. |
 | `file://` restrictions | Avoid ES modules and `fetch`; use plain script tags. |
 | Code becoming hard to iterate on | Separate storage, logic and rendering; keep functions small. |
 
