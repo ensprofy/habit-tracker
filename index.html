@@ -17,6 +17,11 @@
       <button id="theme-toggle" type="button" class="nav-btn theme-btn"></button>
     </header>
 
+    <div id="status-banner" class="banner" role="alert" hidden>
+      <p id="banner-text"></p>
+      <button id="banner-retry" type="button" class="nav-btn">Try again</button>
+    </div>
+
     <nav class="week-nav" aria-label="Week navigation">
       <button id="week-prev" type="button" class="nav-btn" aria-label="Previous week">&lsaquo;</button>
       <p id="week-range" class="week-range" aria-live="polite"></p>
@@ -34,6 +39,7 @@
 
     <div id="week-header" class="grid-row week-header" aria-hidden="true"></div>
     <ul id="habit-list" class="habit-list"></ul>
+    <p id="loading" class="empty-state">Loading your habits&hellip;</p>
     <p id="empty-state" class="empty-state" hidden>No habits yet. Add your first one above.</p>
 
     <div id="insights" class="insights" hidden>
@@ -52,6 +58,7 @@
       <button id="import-btn" type="button" class="nav-btn">Import CSV</button>
       <input id="import-file" type="file" accept=".csv,text/csv" hidden>
     </section>
+    <p class="data-note">Your habits are saved automatically in <code>habits.csv</code>, in the app folder.</p>
   </main>
 
   <script src="storage.js"></script>

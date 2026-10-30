@@ -1,0 +1,12 @@
+{
+  "name": "habit-tracker",
+  "version": "1.0.0",
+  "description": "Single-page habit tracker that stores its data in habits.csv",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

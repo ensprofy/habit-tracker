@@ -1,1 +1,6 @@
 .DS_Store
+
+# Your data: never commit it
+habits.csv
+habits.csv.bak
+habits.csv.tmp-*

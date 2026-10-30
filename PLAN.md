@@ -1,6 +1,6 @@
 # Habit Tracker: Development Plan
 
-A single-page habit tracker built with plain HTML, CSS and JavaScript. No build step, no dependencies, no server: open `index.html` in a browser and it works. Data lives in the browser's `localStorage`.
+A single-page habit tracker built with plain HTML, CSS and JavaScript. No build step and no dependencies. *Update (branch `csv-backup`):* data is now stored in a CSV file, `habits.csv`, written by a tiny dependency-free Node server (`node server.js`), instead of the browser's `localStorage`, so the page no longer works when opened directly from the filesystem.
 
 ## 1. Goals and non-goals
 
@@ -8,7 +8,7 @@ A single-page habit tracker built with plain HTML, CSS and JavaScript. No build 
 - A list of daily habits the user can add, rename and delete.
 - A checkbox per habit for each day of the current week (Mon–Sun).
 - A streak counter per habit (consecutive days completed, ending today or yesterday).
-- Everything persists in `localStorage` across reloads.
+- Everything persists in `habits.csv` across reloads (originally `localStorage`).
 - Opens directly from the filesystem (`file://`), zero setup.
 - Easy to iterate on: small, readable files and clear extension points (dark mode, weekly chart, etc.).
 
@@ -24,7 +24,8 @@ habit-tracker/
 ├── index.html      # markup and script/style includes
 ├── style.css       # layout, theme variables
 ├── app.js          # state, rendering, events
-├── storage.js      # localStorage load/save, schema versioning
+├── server.js       # local server: static files + GET/PUT /api/data backed by habits.csv
+├── storage.js      # load/save through the server, validation, theme preference
 ├── dates.js        # local-date helpers, week days, streak logic (pure functions)
 ├── tests.js        # logic checks for dates.js
 ├── tests.html      # open in a browser to run the checks
@@ -125,7 +126,8 @@ No test framework is required. Keep verification lightweight:
 |---|---|
 | UTC vs local date bugs shifting completions by a day | Build ISO dates from local `getFullYear/getMonth/getDate`; cover in tests. |
 | Corrupted or outdated stored data | Wrap parsing in try/catch, validate shape, keep a `version` for migrations. |
-| Data loss when the browser clears site data | CSV export/import (built in M4); mentioned in README. |
+| Data loss when the browser clears site data | Data now lives in `habits.csv`, outside the browser; CSV export/import and a `.bak` copy as extra safety. |
+| Page overwriting the file with an empty list after a failed load | The page refuses to save until `habits.csv` has been read successfully; covered by end-to-end tests. |
 | `file://` restrictions | Avoid ES modules and `fetch`; use plain script tags. |
 | Code becoming hard to iterate on | Separate storage, logic and rendering; keep functions small. |
 

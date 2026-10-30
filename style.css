@@ -272,6 +272,27 @@ button {
 
 .data-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 
+/* Status banner (server unreachable, bad file) */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+}
+.banner[hidden] { display: none; }
+.banner p { margin: 0; overflow-wrap: anywhere; }
+.banner .nav-btn { flex: none; }
+
+code { padding: 1px 5px; font-size: 0.9em; background: var(--accent-soft); border-radius: 4px; }
+.data-note { margin: 12px 0 0; color: var(--muted); font-size: 0.85rem; }
+.add-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+.empty-state[hidden] { display: none; }
+
 /* Narrow screens: name on its own line, then 7 wide day columns, then streak + delete */
 @media (max-width: 640px) {
   .week-nav { flex-wrap: wrap; }
