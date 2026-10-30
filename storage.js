@@ -1,15 +1,15 @@
-/* Persistence layer: loads and saves app state in localStorage, and
- * validates data coming from storage or from an imported backup file.
- * Plain script (no ES modules) so the page works when opened via file://.
+/* Persistence layer: loads and saves the habits in habits.csv through the
+ * local server (server.js), and validates data from the file or from an
+ * imported CSV. Needs csv.js (loaded after this file, used at call time).
+ * Plain script, no ES modules.
  *
- * State shape (version 1):
+ * State shape (version 1; only the habits are written to the CSV):
  *   { version: 1, settings: { theme?: "light" | "dark" },
  *     habits: [{ id, name, createdAt, completions: ["YYYY-MM-DD", ...] }] }
  */
 (function (global) {
   "use strict";
 
-  var STORAGE_KEY = "habitTracker.v1";
   var VERSION = 1;
   var MAX_NAME_LENGTH = 60;
   var ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -56,50 +56,63 @@
     };
   }
 
-  // Parses JSON text; returns a clean state or null if it isn't usable.
-  function parse(text) {
+  // ---- Habit data: lives in habits.csv, reached through the local server ----
+
+  var API_URL = "api/data";
+
+  // Resolves to a clean state, or rejects with an Error whose message can be shown.
+  function load() {
+    return fetch(API_URL, { cache: "no-store", headers: { Accept: "text/csv" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("The server answered " + response.status + ".");
+        return response.text();
+      })
+      .then(function (text) {
+        if (text.replace(/^\uFEFF/, "").trim() === "") return emptyState();
+        var state = global.HabitCSV.parse(text);
+        if (!state) {
+          throw new Error("habits.csv isn't a valid Habit Tracker file (its first line must be habit,created,date).");
+        }
+        return state;
+      });
+  }
+
+  // Writes the whole state to habits.csv. Resolves to true on success, false on any failure.
+  function save(state) {
+    return fetch(API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "text/csv; charset=utf-8" },
+      body: global.HabitCSV.stringify(state)
+    }).then(function (response) { return response.ok; }, function () { return false; });
+  }
+
+  // ---- Theme: a display preference, so it stays in this browser (not in the CSV) ----
+
+  var THEME_KEY = "habitTracker.theme";
+
+  function loadTheme() {
     try {
-      return normalize(JSON.parse(text));
+      var value = global.localStorage.getItem(THEME_KEY);
+      return value === "light" || value === "dark" ? value : null;
     } catch (e) {
       return null;
     }
   }
 
-  // Returns a clean state object; falls back to empty state on any problem.
-  function load() {
+  function saveTheme(theme) {
     try {
-      var raw = global.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return emptyState();
-      return parse(raw) || emptyState();
-    } catch (e) {
-      return emptyState();
-    }
-  }
-
-  // Returns true on success, false if storage is unavailable or full.
-  function save(state) {
-    try {
-      global.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // Pretty-printed JSON for the backup file.
-  function serialize(state) {
-    return JSON.stringify(state, null, 2);
+      global.localStorage.setItem(THEME_KEY, theme);
+    } catch (e) { /* private mode: the choice just won't be remembered */ }
   }
 
   global.HabitStorage = {
-    KEY: STORAGE_KEY,
     VERSION: VERSION,
     MAX_NAME_LENGTH: MAX_NAME_LENGTH,
     emptyState: emptyState,
     normalize: normalize,
-    parse: parse,
     load: load,
     save: save,
-    serialize: serialize
+    loadTheme: loadTheme,
+    saveTheme: saveTheme
   };
 })(typeof window !== "undefined" ? window : globalThis);
