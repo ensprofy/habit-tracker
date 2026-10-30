@@ -7,18 +7,7 @@
   var DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  var state = HabitStorage.emptyState();
-  var savedTheme = HabitStorage.loadTheme();
-  if (savedTheme) state.settings.theme = savedTheme;
-
-  // The habits live in habits.csv on the server. Nothing may be saved until the
-  // file has been read successfully, or an empty list could overwrite real data.
-  var ready = false;
-  var loadFailed = false;
-  var saving = false;      // a save request is in flight
-  var dirty = false;       // changes not yet written to the file
-  var saveErrorShown = false;
-  var localVersion = 0;    // bumps on every local change; lets a late reload know it is stale
+  var state = HabitStorage.load();
   var weekOffset = 0;   // 0 = this week, -1 = last week, ... (never positive)
   var editingId = null; // id of the habit currently being renamed
 
@@ -40,11 +29,6 @@
   var exportBtn = document.getElementById("export-btn");
   var importBtn = document.getElementById("import-btn");
   var importFile = document.getElementById("import-file");
-  var loading = document.getElementById("loading");
-  var banner = document.getElementById("status-banner");
-  var bannerText = document.getElementById("banner-text");
-  var bannerRetry = document.getElementById("banner-retry");
-  var addButton = form.querySelector("button");
   var MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 
   function newId() {
@@ -57,80 +41,10 @@
     message.className = "message" + (isInfo ? " is-info" : "");
   }
 
-  // Queues a write of the whole habit list to habits.csv. Writes never overlap:
-  // while one is in flight, further changes are folded into the next one.
   function persist() {
-    if (!ready) return;
-    localVersion++;
-    dirty = true;
-    flushSaves();
-  }
-
-  function flushSaves() {
-    if (saving || !dirty) return;
-    dirty = false;
-    saving = true;
-    HabitStorage.save(state).then(function (ok) {
-      saving = false;
-      if (ok) {
-        if (saveErrorShown) {
-          saveErrorShown = false;
-          showMessage("");
-        }
-        flushSaves();
-      } else {
-        dirty = true; // the next change tries again with the full, current list
-        saveErrorShown = true;
-        showMessage("Could not save to habits.csv. Is the server still running? " +
-          "Your latest change is not saved yet; it will be saved with your next change.");
-      }
-    });
-  }
-
-  function setReady(value) {
-    ready = value;
-    [input, addButton, exportBtn, importBtn].forEach(function (control) {
-      control.disabled = !value;
-    });
-  }
-
-  function describeLoadError(error) {
-    if (window.location.protocol === "file:") {
-      return "This page was opened as a plain file, so it can't reach habits.csv. " +
-        "Start the server with \"node server.js\" in the app folder, then open http://localhost:3000";
+    if (!HabitStorage.save(state)) {
+      showMessage("Could not save to this browser. Changes will be lost on reload.");
     }
-    return "Could not load your habits: " + (error && error.message ? error.message : "unknown error") +
-      " Make sure the server is running (node server.js).";
-  }
-
-  function loadData() {
-    banner.hidden = true;
-    loadFailed = false;
-    render();
-    HabitStorage.load().then(function (loaded) {
-      state.habits = loaded.habits;
-      setReady(true);
-      render();
-    }, function (error) {
-      loadFailed = true;
-      setReady(false);
-      bannerText.textContent = describeLoadError(error);
-      banner.hidden = false;
-      render();
-    });
-  }
-
-  // Picks up edits made to habits.csv outside the app (e.g. in a spreadsheet),
-  // but only when this page has nothing unsaved and the user isn't mid-edit.
-  function refreshFromFile() {
-    var versionAtStart = localVersion;
-    HabitStorage.load().then(function (loaded) {
-      if (versionAtStart !== localVersion || saving || dirty || editingId !== null) return;
-      if (HabitCSV.stringify({ habits: loaded.habits }) !== HabitCSV.stringify({ habits: state.habits })) {
-        state.habits = loaded.habits;
-      }
-      render();
-    }, function () { /* keep working with what is on screen */ });
   }
 
   function el(tag, className, text) {
@@ -240,17 +154,17 @@
 
   function toggleTheme() {
     state.settings.theme = effectiveTheme() === "dark" ? "light" : "dark";
-    HabitStorage.saveTheme(state.settings.theme);
+    persist();
     applyTheme();
   }
 
   // ---- Backup: export / import -----------------------------------------
   function exportData() {
-    var blob = new Blob([HabitCSV.stringify(state)], { type: "text/csv;charset=utf-8" });
+    var blob = new Blob([HabitStorage.serialize(state)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
     link.href = url;
-    link.download = "habit-tracker-" + HabitDates.todayISO() + ".csv";
+    link.download = "habit-tracker-" + HabitDates.todayISO() + ".json";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -260,14 +174,14 @@
 
   function importData(file) {
     if (file.size > MAX_IMPORT_BYTES) {
-      showMessage("That file is too large to be a Habit Tracker CSV backup.");
+      showMessage("That file is too large to be a Habit Tracker backup.");
       return;
     }
     var reader = new FileReader();
     reader.onload = function () {
-      var imported = HabitCSV.parse(String(reader.result));
+      var imported = HabitStorage.parse(String(reader.result));
       if (!imported) {
-        showMessage("That file isn't a valid Habit Tracker CSV backup.");
+        showMessage("That file isn't a valid Habit Tracker backup.");
         return;
       }
       var question = "Replace your current " + state.habits.length + " habit(s) with the " +
@@ -276,7 +190,7 @@
         showMessage("Import cancelled.", true);
         return;
       }
-      imported.settings = state.settings; // a CSV carries no settings: keep the current theme
+      if (!imported.settings.theme) imported.settings = state.settings; // keep current theme
       state = imported;
       editingId = null;
       persist();
@@ -412,8 +326,7 @@
     });
 
     var empty = state.habits.length === 0;
-    loading.hidden = ready || loadFailed;
-    emptyState.hidden = !ready || !empty;
+    emptyState.hidden = !empty;
     weekHeader.hidden = empty;
 
     insights.hidden = empty;
@@ -447,24 +360,11 @@
   weekNext.addEventListener("click", function () { setWeekOffset(weekOffset + 1); });
   weekToday.addEventListener("click", function () { setWeekOffset(0); });
 
-  bannerRetry.addEventListener("click", loadData);
-
-  // When returning to the tab, pick up a new day (or week) and any outside edits to the file.
+  // Refresh when returning to the tab so a new day (or week) is picked up.
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden || editingId !== null) return;
-    if (ready && !saving && !dirty) refreshFromFile();
-    else render();
+    if (!document.hidden && editingId === null) render();
   });
 
-  // Warn before leaving with changes that haven't reached the file.
-  window.addEventListener("beforeunload", function (event) {
-    if (saving || dirty) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-  });
-
-  setReady(false);
   applyTheme();
-  loadData();
+  render();
 })();

@@ -1,6 +1,6 @@
 # Habit Tracker: Development Plan
 
-A single-page habit tracker built with plain HTML, CSS and JavaScript. No build step and no dependencies. *Update (branch `csv-backup`):* data is now stored in a CSV file, `habits.csv`, written by a tiny dependency-free Node server (`node server.js`), instead of the browser's `localStorage`, so the page no longer works when opened directly from the filesystem.
+A single-page habit tracker built with plain HTML, CSS and JavaScript. No build step, no dependencies, no server: open `index.html` in a browser and it works. Data lives in the browser's `localStorage`.
 
 ## 1. Goals and non-goals
 
@@ -8,7 +8,7 @@ A single-page habit tracker built with plain HTML, CSS and JavaScript. No build 
 - A list of daily habits the user can add, rename and delete.
 - A checkbox per habit for each day of the current week (Mon–Sun).
 - A streak counter per habit (consecutive days completed, ending today or yesterday).
-- Everything persists in `habits.csv` across reloads (originally `localStorage`).
+- Everything persists in `localStorage` across reloads.
 - Opens directly from the filesystem (`file://`), zero setup.
 - Easy to iterate on: small, readable files and clear extension points (dark mode, weekly chart, etc.).
 
@@ -24,8 +24,7 @@ habit-tracker/
 ├── index.html      # markup and script/style includes
 ├── style.css       # layout, theme variables
 ├── app.js          # state, rendering, events
-├── server.js       # local server: static files + GET/PUT /api/data backed by habits.csv
-├── storage.js      # load/save through the server, validation, theme preference
+├── storage.js      # localStorage load/save, schema versioning
 ├── dates.js        # local-date helpers, week days, streak logic (pure functions)
 ├── tests.js        # logic checks for dates.js
 ├── tests.html      # open in a browser to run the checks
@@ -33,7 +32,7 @@ habit-tracker/
 └── README.md       # usage and screenshots
 ```
 
-Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, `csv.js`, `dates.js`, `charts.js`, then `app.js`.
+Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, `dates.js`, then `app.js`.
 
 ## 3. Data model
 
@@ -106,7 +105,7 @@ Design decisions:
 - [x] Dark mode (CSS variables, `prefers-color-scheme`, manual toggle saved in storage).
 - [x] Weekly progress chart (plain SVG or `<canvas>`, no library).
 - [x] Longest streak and completion rate per habit.
-- [x] Export/import data for backup. Built as JSON first, then switched to CSV (branch `csv-backup`) so the file opens in spreadsheet apps.
+- [x] Export/import data as JSON for backup.
 - [ ] Reorder habits (drag and drop). Not built yet; a simpler alternative is up/down buttons, which also work on touch screens and with a keyboard.
 
 ### M5: Release
@@ -126,8 +125,7 @@ No test framework is required. Keep verification lightweight:
 |---|---|
 | UTC vs local date bugs shifting completions by a day | Build ISO dates from local `getFullYear/getMonth/getDate`; cover in tests. |
 | Corrupted or outdated stored data | Wrap parsing in try/catch, validate shape, keep a `version` for migrations. |
-| Data loss when the browser clears site data | Data now lives in `habits.csv`, outside the browser; CSV export/import and a `.bak` copy as extra safety. |
-| Page overwriting the file with an empty list after a failed load | The page refuses to save until `habits.csv` has been read successfully; covered by end-to-end tests. |
+| Data loss when the browser clears site data | JSON export/import (built in M4); mentioned in README. |
 | `file://` restrictions | Avoid ES modules and `fetch`; use plain script tags. |
 | Code becoming hard to iterate on | Separate storage, logic and rendering; keep functions small. |
 
