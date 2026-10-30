@@ -32,7 +32,7 @@ habit-tracker/
 └── README.md       # usage and screenshots
 ```
 
-Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, `dates.js`, then `app.js`.
+Plain `<script>` tags (not ES modules) are used so the page works over `file://`, where module imports are blocked by CORS in some browsers. Load order: `storage.js`, `csv.js`, `dates.js`, `charts.js`, then `app.js`.
 
 ## 3. Data model
 
@@ -105,7 +105,7 @@ Design decisions:
 - [x] Dark mode (CSS variables, `prefers-color-scheme`, manual toggle saved in storage).
 - [x] Weekly progress chart (plain SVG or `<canvas>`, no library).
 - [x] Longest streak and completion rate per habit.
-- [x] Export/import data as JSON for backup.
+- [x] Export/import data for backup. Built as JSON first, then switched to CSV (branch `csv-backup`) so the file opens in spreadsheet apps.
 - [ ] Reorder habits (drag and drop). Not built yet; a simpler alternative is up/down buttons, which also work on touch screens and with a keyboard.
 
 ### M5: Release
@@ -125,7 +125,7 @@ No test framework is required. Keep verification lightweight:
 |---|---|
 | UTC vs local date bugs shifting completions by a day | Build ISO dates from local `getFullYear/getMonth/getDate`; cover in tests. |
 | Corrupted or outdated stored data | Wrap parsing in try/catch, validate shape, keep a `version` for migrations. |
-| Data loss when the browser clears site data | JSON export/import (built in M4); mentioned in README. |
+| Data loss when the browser clears site data | CSV export/import (built in M4); mentioned in README. |
 | `file://` restrictions | Avoid ES modules and `fetch`; use plain script tags. |
 | Code becoming hard to iterate on | Separate storage, logic and rendering; keep functions small. |
 

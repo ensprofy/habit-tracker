@@ -160,11 +160,11 @@
 
   // ---- Backup: export / import -----------------------------------------
   function exportData() {
-    var blob = new Blob([HabitStorage.serialize(state)], { type: "application/json" });
+    var blob = new Blob([HabitCSV.stringify(state)], { type: "text/csv;charset=utf-8" });
     var url = URL.createObjectURL(blob);
     var link = document.createElement("a");
     link.href = url;
-    link.download = "habit-tracker-" + HabitDates.todayISO() + ".json";
+    link.download = "habit-tracker-" + HabitDates.todayISO() + ".csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -174,14 +174,14 @@
 
   function importData(file) {
     if (file.size > MAX_IMPORT_BYTES) {
-      showMessage("That file is too large to be a Habit Tracker backup.");
+      showMessage("That file is too large to be a Habit Tracker CSV backup.");
       return;
     }
     var reader = new FileReader();
     reader.onload = function () {
-      var imported = HabitStorage.parse(String(reader.result));
+      var imported = HabitCSV.parse(String(reader.result));
       if (!imported) {
-        showMessage("That file isn't a valid Habit Tracker backup.");
+        showMessage("That file isn't a valid Habit Tracker CSV backup.");
         return;
       }
       var question = "Replace your current " + state.habits.length + " habit(s) with the " +
@@ -190,7 +190,7 @@
         showMessage("Import cancelled.", true);
         return;
       }
-      if (!imported.settings.theme) imported.settings = state.settings; // keep current theme
+      imported.settings = state.settings; // a CSV carries no settings: keep the current theme
       state = imported;
       editingId = null;
       persist();
